@@ -1,20 +1,22 @@
-import React, { useState } from "react";
-import { User, GraduationCap, Mail, Settings, LogOut, ChevronRight } from "lucide-react";
-import { Link } from "react-router-dom";
-import { LogoutDialog } from "../components/LogoutDialog";
-
-// Mock user data - In a real app, this would come from your auth system
+import React, { useState } from 'react';
+import { User, GraduationCap, Mail, Settings, LogOut, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { LogoutDialog } from '../components/LogoutDialog';
+import { useAuth } from '../contexts/AuthContext';
 const MOCK_USER = {
-  nombre: "Marc",
-  apellidos: "García Fernández",
-  email: "marc.garcia@ejemplo.com",
-  curso: "2º ESO"
+  nombre: 'Marc',
+  apellidos: 'García Fernández',
+  email: 'marc.garcia@ejemplo.com',
+  curso: '2º ESO'
 };
 export function Profile() {
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const {
+    user,
+    logout
+  } = useAuth();
   const handleLogout = () => {
-    // Handle logout logic here
-    console.log("Logout confirmed");
+    logout();
     setShowLogoutDialog(false);
   };
   return <main className="min-h-screen bg-[#f5f5f5] w-full">
@@ -28,7 +30,7 @@ export function Profile() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold">
-                  {MOCK_USER.nombre} {MOCK_USER.apellidos}
+                  {user.nombre} {user.apellidos}
                 </h1>
                 <p className="text-white/80">Estudiante</p>
               </div>
@@ -42,11 +44,11 @@ export function Profile() {
             <div className="space-y-4">
               <div className="flex items-center gap-3 text-gray-600">
                 <GraduationCap className="h-5 w-5" />
-                <span>Curso: {MOCK_USER.curso}</span>
+                <span>Curso: {user.curso}</span>
               </div>
               <div className="flex items-center gap-3 text-gray-600">
                 <Mail className="h-5 w-5" />
-                <span>{MOCK_USER.email}</span>
+                <span>{user.email}</span>
               </div>
             </div>
             {/* Actions Section */}
