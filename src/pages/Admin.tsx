@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, createElement } from 'react';
 import { Calendar, Image, Filter, Download, ChevronRight, Package } from 'lucide-react';
 import { useOrders } from '../contexts/OrderContext';
 type TabType = 'daily' | 'monthly' | 'yearly' | 'images';
@@ -13,7 +13,6 @@ interface MealRequest {
   dessert: string;
   hasTupperware: boolean;
 }
-// Mock data
 const MOCK_REQUESTS: MealRequest[] = [{
   id: 1,
   studentName: 'Marc García',
@@ -34,7 +33,30 @@ export function Admin() {
   const {
     getAllOrders
   } = useOrders();
-  const orders = getAllOrders();
+  const allOrders = getAllOrders();
+  const getFilteredOrders = () => {
+    if (activeTab === 'daily') {
+      return allOrders.filter(order => {
+        const orderDate = new Date(order.date);
+        return orderDate.getDate() === selectedDate.getDate() && orderDate.getMonth() === selectedDate.getMonth() && orderDate.getFullYear() === selectedDate.getFullYear();
+      });
+    }
+    if (activeTab === 'monthly') {
+      const [year, month] = selectedMonth.split('-');
+      return allOrders.filter(order => {
+        const orderDate = new Date(order.date);
+        return orderDate.getMonth() === parseInt(month) - 1 && orderDate.getFullYear() === parseInt(year);
+      });
+    }
+    if (activeTab === 'yearly') {
+      return allOrders.filter(order => {
+        const orderDate = new Date(order.date);
+        return orderDate.getFullYear() === selectedYear;
+      });
+    }
+    return allOrders;
+  };
+  const filteredOrders = getFilteredOrders();
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
@@ -42,7 +64,23 @@ export function Admin() {
     }
   };
   const exportData = () => {
-    console.log('Exportando datos...');
+    const exportData = {
+      period: activeTab,
+      date: activeTab === 'daily' ? selectedDate.toISOString() : activeTab === 'monthly' ? selectedMonth : selectedYear.toString(),
+      orders: filteredOrders
+    };
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataBlob = new Blob([dataStr], {
+      type: 'application/json'
+    });
+    const url = window.URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `pedidos_${activeTab}_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
   };
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('es-ES', {
@@ -54,7 +92,6 @@ export function Admin() {
   return <main className="min-h-screen bg-[#f5f5f5] w-full">
       <div className="max-w-6xl mx-auto p-4 sm:p-6">
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          {/* Tabs Navigation */}
           <div className="border-b overflow-x-auto">
             <div className="flex whitespace-nowrap">
               <button onClick={() => setActiveTab('daily')} className={`px-4 sm:px-6 py-3 font-medium text-sm sm:text-base ${activeTab === 'daily' ? 'border-b-2 border-[#009CA6] text-[#009CA6]' : 'text-gray-500 hover:text-[#009CA6]'}`}>
@@ -71,7 +108,6 @@ export function Admin() {
               </button>
             </div>
           </div>
-          {/* Content Area */}
           <div className="p-4 sm:p-6">
             {activeTab === 'images' ? <div className="space-y-6">
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-8">
@@ -130,12 +166,10 @@ export function Admin() {
                     </div>
                   </div>
                 </div>
-                {/* Image Preview Grid */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                   {/* Preview images would be mapped here */}
                 </div>
               </div> : <>
-                {/* Filters */}
                 <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div className="flex items-center gap-4">
                     <Filter className="h-5 w-5 text-gray-400" />
@@ -154,7 +188,6 @@ export function Admin() {
                     Exportar
                   </button>
                 </div>
-                {/* Table (Desktop) / Cards (Mobile) */}
                 <div className="hidden md:block overflow-x-auto">
                   <table className="w-full">
                     <thead className="bg-gray-50">
@@ -183,62 +216,71 @@ export function Admin() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {orders.map(request => <tr key={request.id}>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {request.studentName}
+                      {filteredOrders.length === 0 ? <tr>
+                          <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                            No hay pedidos para el período seleccionado
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {request.course}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {formatDate(request.date)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {request.firstCourse}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {request.secondCourse}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {request.dessert}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {request.hasTupperware ? 'Sí' : 'No'}
-                          </td>
-                        </tr>)}
+                        </tr> : filteredOrders.map(order => <tr key={order.id}>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {order.studentName}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {order.course}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {formatDate(order.date)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {order.firstCourse}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {order.secondCourse}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {order.dessert}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {order.hasTupperware ? 'Sí' : 'No'}
+                            </td>
+                          </tr>)}
                     </tbody>
                   </table>
                 </div>
-                {/* Mobile Cards */}
                 <div className="md:hidden space-y-4">
-                  {orders.map(request => <div key={request.id} className="bg-white border rounded-lg p-4 space-y-3">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-medium">{request.studentName}</h3>
-                          <p className="text-sm text-gray-500">
-                            {request.course}
-                          </p>
+                  {filteredOrders.length === 0 ? <div className="text-center text-gray-500 p-4">
+                      No hay pedidos para el período seleccionado
+                    </div> : filteredOrders.map(order => <div key={order.id} className="bg-white border rounded-lg p-4 space-y-3">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="font-medium">{order.studentName}</h3>
+                            <p className="text-sm text-gray-500">
+                              {order.course}
+                            </p>
+                          </div>
+                          {order.hasTupperware && <Package className="h-5 w-5 text-[#009CA6]" />}
                         </div>
-                        {request.hasTupperware && <Package className="h-5 w-5 text-[#009CA6]" />}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {formatDate(request.date)}
-                      </div>
-                      <div className="space-y-2">
-                        <div>
-                          <p className="text-xs text-gray-500">Primer Plato</p>
-                          <p className="text-sm">{request.firstCourse}</p>
+                        <div className="text-sm text-gray-500">
+                          {formatDate(order.date)}
                         </div>
-                        <div>
-                          <p className="text-xs text-gray-500">Segundo Plato</p>
-                          <p className="text-sm">{request.secondCourse}</p>
+                        <div className="space-y-2">
+                          <div>
+                            <p className="text-xs text-gray-500">
+                              Primer Plato
+                            </p>
+                            <p className="text-sm">{order.firstCourse}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">
+                              Segundo Plato
+                            </p>
+                            <p className="text-sm">{order.secondCourse}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Postre</p>
+                            <p className="text-sm">{order.dessert}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-xs text-gray-500">Postre</p>
-                          <p className="text-sm">{request.dessert}</p>
-                        </div>
-                      </div>
-                    </div>)}
+                      </div>)}
                 </div>
               </>}
           </div>
