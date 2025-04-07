@@ -10,26 +10,29 @@ import { Profile } from './pages/Profile';
 import { Admin } from './pages/Admin';
 import { ChangePassword } from './pages/ChangePassword';
 import { Navigation } from './components/Navigation';
+import { OrderProvider } from './contexts/OrderContext';
 export function AppRouter() {
   return <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/*" element={<AuthGuard>
-                <div className="pb-16 md:pt-16 md:pb-0">
-                  <Navigation />
-                  <Routes>
-                    <Route path="/" element={<Welcome />} />
-                    <Route path="/menu" element={<Home />} />
-                    <Route path="/history" element={<History />} />
-                    <Route path="/profile" element={<Profile />} />
-                    <Route path="/admin" element={<Admin />} />
-                    <Route path="/settings/password" element={<ChangePassword />} />
-                  </Routes>
-                </div>
-              </AuthGuard>} />
-          <Route path="*" element={<Navigate to="/auth" replace />} />
-        </Routes>
-      </Router>
+      <OrderProvider>
+        <Router>
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/*" element={<AuthGuard>
+                  <div className="pb-16 md:pt-16 md:pb-0">
+                    <Navigation />
+                    <Routes>
+                      <Route path="/" element={<Welcome />} />
+                      <Route path="/menu" element={<Home />} />
+                      <Route path="/history" element={<History />} />
+                      <Route path="/profile" element={<Profile />} />
+                      <Route path="/admin" element={<Admin />} />
+                      <Route path="/settings/password" element={<ChangePassword />} />
+                    </Routes>
+                  </div>
+                </AuthGuard>} />
+            <Route path="*" element={<Navigate to="/auth" replace />} />
+          </Routes>
+        </Router>
+      </OrderProvider>
     </AuthProvider>;
 }
